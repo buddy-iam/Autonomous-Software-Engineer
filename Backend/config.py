@@ -5,18 +5,20 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 
 load_dotenv()
 
-# 1. Heavy LLM for Project Manager & Coder (Needs more output room)
+# Heavy LLM: Lowered tokens to 3000 to prevent TPM cap, added max_retries
 heavy_llm = ChatGroq(
-    model="qwen/qwen3.8-27b", 
+    model="openai/gpt-oss-120b", 
     temperature=0.1, 
-    max_tokens=8000  # High enough to generate code, low enough to avoid OTPM block if optimized
+    max_tokens=3000,
+    max_retries=3
 )
 
-# 2. Light LLM for Intent Classifier, Bug Finder, & Optimizer (Fast, low token usage)
+# Light LLM: Switched to 8B model to utilize 30,000 TPM free tier quota
 light_llm = ChatGroq(
-    model="qwen/qwen3.8-27b", 
+    model="openai/gpt-oss-20b", 
     temperature=0.1, 
-    max_tokens=800
+    max_tokens=800,
+    max_retries=3
 )
 
 tavily_tool = TavilySearchResults(max_results=3)
