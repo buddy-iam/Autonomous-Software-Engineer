@@ -4,7 +4,7 @@ from state import AgencyState
 import agents
 
 def route_intent(state: AgencyState):
-    return "project_manager" if state.get("is_build_request") else "chat_node"
+    return "project_manager" if state.get("is_build_request") else "general_chat_agent"
 
 def route_after_approval(state: AgencyState):
     if state.get("is_approved"):
@@ -25,14 +25,11 @@ def route_after_qa(state: AgencyState):
         return "project_manager"
     return "human_approval"
 
-def chat_node(state: AgencyState):
-    return {"chat_response": state.get("chat_response", "Hello! How can I help you?")}
-
 def build_graph():
     workflow = StateGraph(AgencyState)
     
     workflow.add_node("intent_classifier", agents.intent_classifier)
-    workflow.add_node("chat_node", chat_node) 
+    workflow.add_node("general_chat_agent", agents.general_chat_agent) 
     workflow.add_node("project_manager", agents.project_manager)
     workflow.add_node("human_approval", agents.human_approval)
     workflow.add_node("coder_agent", agents.coder_agent)
@@ -44,10 +41,10 @@ def build_graph():
     
     workflow.add_conditional_edges("intent_classifier", route_intent, {
         "project_manager": "project_manager", 
-        "chat_node": "chat_node"
+        "general_chat_agent": "general_chat_agent"
     })
     
-    workflow.add_edge("chat_node", END) 
+    workflow.add_edge("general_chat_agent", END) 
     workflow.add_edge("project_manager", "human_approval")
     
     workflow.add_conditional_edges("human_approval", route_after_approval, {

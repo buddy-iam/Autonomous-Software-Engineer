@@ -2,36 +2,49 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AI Auto-Dev IDE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Developer</title>
     <link rel="stylesheet" href="style.css">
 </head>
+<!-- The 'is-coding' class will be added dynamically when code is generated -->
 <body>
-    <div class="ide-container" style="display: flex; height: 100vh; width: 100vw; overflow: hidden;">
-        
-        <!-- Left Panel: Chat Interface -->
-        <div class="chat-panel" style="width: 40%; display: flex; flex-direction: column; border-right: 1px solid #444; background: #fafafa;">
-            <div id="chat-history" style="flex-grow: 1; overflow-y: auto; padding: 20px;"></div>
-            <div class="chat-input-area" style="padding: 15px; border-top: 1px solid #ddd; background: #fff;">
-                <input type="text" id="chat-input" placeholder="What should we build?" style="width: 70%; padding: 8px;">
-                <button onclick="sendMessage('start')" style="padding: 8px;">Send</button>
-                <button onclick="sendMessage('approve')" style="padding: 8px;">Approve Next</button>
-            </div>
+    <div class="top-bar">
+        <div class="brand">✨ AI Developer</div>
+        <div class="config">
+            <input type="text" id="backend-url" placeholder="Backend URL" />
+            <button onclick="saveBackendUrl()">Connect</button>
         </div>
-
-        <!-- Right Panel: Code Editor -->
-        <div class="editor-panel" style="width: 60%; display: flex; flex-direction: column;">
-            <div class="editor-tabs" id="file-tabs" style="height: 40px; background: #1e1e1e; color: #fff; display: flex; align-items: center; padding: 0 10px; gap: 10px; overflow-x: auto;">
-                <!-- File tabs will be injected here -->
-            </div>
-            <div id="monaco-container" style="flex-grow: 1; min-height: 0;"></div>
-            <button onclick="saveCurrentFile()" style="height: 40px; background: #007acc; color: white; border: none; cursor: pointer; font-weight: bold;">
-                Save Edit to AI Memory
-            </button>
-        </div>
-        
     </div>
 
-    <!-- Monaco Editor Loader -->
+    <div class="main-container">
+        <!-- Left: Chat Interface -->
+        <div class="chat-container">
+            <div id="chat-history"></div>
+            <div class="chat-input-box">
+                <textarea 
+                    id="chat-input" 
+                    placeholder="Ask a question or describe an app to build... (Press Enter to send)" 
+                    onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage('start'); }"
+                ></textarea>
+                <div class="chat-actions">
+                    <button class="btn-approve" onclick="sendMessage('approve')">Approve Next File</button>
+                    <button class="btn-send" onclick="sendMessage('start')">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Tabbed Auto-Saving Code Editor (Hidden until code is generated) -->
+        <div class="code-container">
+            <div class="tabs-header" id="file-tabs"></div>
+            <div id="monaco-container"></div>
+            <div class="status-bar">
+                <span id="save-status">Waiting for code...</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
     <script src="app.js"></script>
 </body>
