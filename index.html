@@ -3,49 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Developer</title>
+    <title>Autonomous AI Agency</title>
+    <!-- Tailwind CSS with Typography Plugin -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Marked.js for Markdown Parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<!-- The 'is-coding' class will be added dynamically when code is generated -->
-<body>
-    <div class="top-bar">
-        <div class="brand">✨ AI Developer</div>
-        <div class="config">
-            <input type="text" id="backend-url" placeholder="Backend URL" />
-            <button onclick="saveBackendUrl()">Connect</button>
+<body class="bg-gray-950 text-gray-100 flex flex-col w-full">
+
+    <header class="flex-none bg-gray-900 border-b border-gray-800 px-6 py-4 flex justify-between items-center z-20 w-full shadow-md">
+        <h1 class="text-xl font-bold flex items-center gap-3">
+            <i data-lucide="bot" class="text-blue-500 w-7 h-7"></i> Autonomous Agency
+        </h1>
+        <div class="flex gap-3">
+            <button onclick="resetSession()" class="px-4 py-2 hover:bg-gray-800 rounded-lg flex items-center gap-2 text-sm text-gray-300 transition border border-gray-700">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i> New Session
+            </button>
+            <button onclick="toggleSettings()" class="p-2 hover:bg-gray-800 rounded-lg text-gray-400 transition border border-gray-700">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <div id="settingsPanel" class="hidden absolute top-16 right-6 w-96 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl z-30 p-5 space-y-4">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="font-semibold text-gray-200 flex items-center gap-2"><i data-lucide="server" class="w-4 h-4"></i> Configuration</h3>
+            <button onclick="toggleSettings()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div>
+            <label class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Cloudflared Backend URL</label>
+            <input type="text" id="backendUrl" class="w-full p-2.5 mt-1.5 bg-gray-900 rounded-lg border border-gray-700 text-sm outline-none focus:border-blue-500 transition" value="https://your-tunnel.trycloudflare.com">
+        </div>
+        <div>
+            <label class="text-xs text-gray-400 uppercase tracking-wider font-semibold">GitHub PAT (Optional)</label>
+            <input type="password" id="githubToken" placeholder="ghp_..." class="w-full p-2.5 mt-1.5 bg-gray-900 rounded-lg border border-gray-700 text-sm outline-none focus:border-blue-500 transition">
+        </div>
+        <div>
+            <label class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Target Repository</label>
+            <input type="text" id="githubRepo" placeholder="e.g., ai-generated-app" class="w-full p-2.5 mt-1.5 bg-gray-900 rounded-lg border border-gray-700 text-sm outline-none focus:border-blue-500 transition">
         </div>
     </div>
 
-    <div class="main-container">
-        <!-- Left: Chat Interface -->
-        <div class="chat-container">
-            <div id="chat-history"></div>
-            <div class="chat-input-box">
-                <textarea 
-                    id="chat-input" 
-                    placeholder="Ask a question or describe an app to build... (Press Enter to send)" 
-                    onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage('start'); }"
-                ></textarea>
-                <div class="chat-actions">
-                    <button class="btn-approve" onclick="sendMessage('approve')">Approve Next File</button>
-                    <button class="btn-send" onclick="sendMessage('start')">Send</button>
+    <main id="chatContainer" class="flex-1 overflow-y-auto bg-gray-950 p-4 md:p-8 scroll-smooth w-full">
+        <div id="chatHistory" class="max-w-5xl mx-auto flex flex-col gap-6 pb-32">
+            <div id="emptyState" class="flex flex-col items-center justify-center text-gray-500 mt-20 space-y-4">
+                <i data-lucide="cpu" class="w-16 h-16 text-gray-700"></i>
+                <p class="text-lg">System ready. Describe your project to deploy the swarm.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="flex-none bg-gray-900 border-t border-gray-800 w-full p-4 relative z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        <div class="max-w-5xl mx-auto relative">
+            <div id="approvalBanner" class="hidden absolute bottom-full left-0 w-full mb-4 p-4 bg-blue-900/40 border border-blue-700/50 rounded-xl flex items-center justify-between backdrop-blur-sm shadow-xl">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-blue-400"></i>
+                    <span class="text-sm text-blue-100 font-medium">Project Manager is waiting for your approval to start building.</span>
                 </div>
+                <button onclick="handleApprove()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-lg text-sm font-semibold transition text-white shadow-lg">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> Approve & Build
+                </button>
             </div>
-        </div>
 
-        <!-- Right: Tabbed Auto-Saving Code Editor (Hidden until code is generated) -->
-        <div class="code-container">
-            <div class="tabs-header" id="file-tabs"></div>
-            <div id="monaco-container"></div>
-            <div class="status-bar">
-                <span id="save-status">Waiting for code...</span>
+            <div id="fileList" class="flex gap-2 mb-3 overflow-x-auto empty:hidden pb-1"></div>
+            
+            <div class="flex gap-3 items-end bg-gray-950 p-2 rounded-2xl border border-gray-800 shadow-inner focus-within:border-gray-600 transition-colors">
+                <label class="p-3 bg-gray-900 hover:bg-gray-800 rounded-xl cursor-pointer transition text-gray-400 hover:text-blue-400">
+                    <i data-lucide="paperclip" class="w-5 h-5"></i>
+                    <input type="file" id="fileInput" multiple class="hidden" onchange="handleFiles()">
+                </label>
+                
+                <textarea id="promptInput" placeholder="Describe the feature or project..." 
+                          class="flex-1 bg-transparent p-3 resize-none outline-none text-sm text-gray-100 max-h-48 overflow-y-auto" 
+                          rows="1" oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 200) + 'px'"
+                          onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); handleSend(); }"></textarea>
+                
+                <button id="sendBtn" onclick="handleSend()" class="p-3 bg-white text-gray-900 hover:bg-gray-200 rounded-xl transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                </button>
             </div>
+            <div class="text-center mt-2 text-[10px] text-gray-500">Shift + Enter for new line. Enter to send.</div>
         </div>
-    </div>
+    </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

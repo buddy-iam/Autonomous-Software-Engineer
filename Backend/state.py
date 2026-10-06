@@ -9,11 +9,10 @@ class AgencyState(TypedDict):
     project_plan: str
     research_context: str
     is_approved: bool
-    is_replan: bool
     
-    file_queue: List[str]          
-    edit_queue: List[str]          
-    code_files: Dict[str, str]     
+    # Interactive File Queue State
+    file_queue: List[str]          # Files left to build (e.g., ["index.html", "style.css"])
+    code_files: Dict[str, str]     # Accumulated built files to send to the frontend
     
     github_token: str
     github_repo: str
