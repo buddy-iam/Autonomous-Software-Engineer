@@ -9,7 +9,7 @@ class AgencyState(TypedDict):
     project_plan: str
     research_context: str
     is_approved: bool
-    is_replan: bool                # NEW: Signals a reset/re-plan request
+    is_replan: bool                # Signals a reset/re-plan request
     
     file_queue: List[str]          
     edit_queue: List[str]          

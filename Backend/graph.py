@@ -20,7 +20,6 @@ def route_after_generation(state: AgencyState):
         return "human_approval" 
     return "delivery_agent"     
 
-# NEW: Allow qa_agent to re-trigger project_manager if user wants a redesign
 def route_after_qa(state: AgencyState):
     if state.get("is_replan"):
         return "project_manager"
@@ -33,7 +32,7 @@ def build_graph():
     workflow = StateGraph(AgencyState)
     
     workflow.add_node("intent_classifier", agents.intent_classifier)
-    workflow.add_node("chat_node", chat_node)
+    workflow.add_node("chat_node", chat_node) 
     workflow.add_node("project_manager", agents.project_manager)
     workflow.add_node("human_approval", agents.human_approval)
     workflow.add_node("coder_agent", agents.coder_agent)
@@ -48,7 +47,7 @@ def build_graph():
         "chat_node": "chat_node"
     })
     
-    workflow.add_edge("chat_node", END)
+    workflow.add_edge("chat_node", END) 
     workflow.add_edge("project_manager", "human_approval")
     
     workflow.add_conditional_edges("human_approval", route_after_approval, {
@@ -68,7 +67,6 @@ def build_graph():
         "delivery_agent": "delivery_agent"
     })
     
-    # Conditional edge: QA can either wait for human approval or re-plan
     workflow.add_conditional_edges("qa_agent", route_after_qa, {
         "project_manager": "project_manager",
         "human_approval": "human_approval"

@@ -4,11 +4,9 @@ import time
 from datetime import datetime
 from config import heavy_llm, light_llm, tavily_tool
 from state import AgencyState
-from langchain_core.messages import AIMessage
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
 def clean_code_output(content: str) -> str:
-    # ... (Keep existing clean_code_output logic) ...
     blocks = re.findall(r'```(?:[\w+-]+)?\n(.*?)```', content, re.DOTALL)
     if blocks:
         for block in blocks:
@@ -59,7 +57,6 @@ def intent_classifier(state: AgencyState):
         
         if start != -1 and end != 0:
             cleaned = cleaned[start:end]
-            # Fix unescaped newlines which frequently break JSON parsing
             cleaned = cleaned.replace('\n', '\\n')
             parsed = json.loads(cleaned, strict=False)
             
@@ -70,18 +67,14 @@ def intent_classifier(state: AgencyState):
                 "messages": [AIMessage(content=reply)] if reply else []
             }
         else:
-            # Force an exception if no JSON braces were found at all
             raise ValueError("No JSON found")
             
     except Exception as e:
-        # GRACEFUL FALLBACK: If the model answered in plain text, just use that!
         if response and response.content:
             fallback_reply = response.content.strip()
-            # Clean up any accidental markdown backticks
             fallback_reply = re.sub(r'^```(?:json)?\s*', '', fallback_reply)
             fallback_reply = re.sub(r'\s*```$', '', fallback_reply)
         else:
-            # Only use the canned message if the API actually crashed/timed out
             fallback_reply = "I'm listening. What would you like to build or discuss today?"
             
         return {
@@ -93,7 +86,7 @@ def intent_classifier(state: AgencyState):
 def project_manager(state: AgencyState):
     user_request = state['messages'][-1].content
     current_time = datetime.now().strftime("%A, %B %d, %Y")
-
+    
     try:
         search_query = light_llm.invoke(f"Search query for latest docs on: {user_request}").content
         raw_results = tavily_tool.invoke({"query": search_query.replace('"', '').strip()})
@@ -144,8 +137,8 @@ def project_manager(state: AgencyState):
         "research_context": research_context,
         "file_queue": file_queue,
         "edit_queue": [],
-        "code_files": {},         # Resets previous build files
-        "is_replan": False,       # Clears the replan flag
+        "code_files": {},         
+        "is_replan": False,       
         "is_approved": False,
         "chat_response": chat_msg,
         "messages": [AIMessage(content=chat_msg)]
@@ -155,7 +148,6 @@ def human_approval(state: AgencyState):
     pass 
 
 def coder_agent(state: AgencyState):
-    # THROTTLING: Pause to allow Groq Free Tier TPM bucket to drain
     time.sleep(12) 
     
     queue = list(state.get("file_queue", []))
@@ -166,7 +158,6 @@ def coder_agent(state: AgencyState):
     
     current_file = queue.pop(0)
     
-    # FIX: Fetch the actual user request from the very first message in the thread
     original_request = state['messages'][0].content if state['messages'] else "A web application."
     
     prompt = f"""
@@ -209,10 +200,9 @@ def coder_agent(state: AgencyState):
         "code_files": built_code,
         "file_queue": queue,
         "chat_response": next_msg,
-        "messages": [AIMessage(content=next_msg)], # Fixes AI memory
+        "messages": [AIMessage(content=next_msg)], 
         "is_approved": False
     }
-
 
 def qa_agent(state: AgencyState):
     user_message = state['messages'][-1].content
@@ -255,12 +245,10 @@ def qa_agent(state: AgencyState):
         is_replan = parsed.get("is_replan", False)
         edit_files = [f for f in parsed.get("edit_files", []) if f in built_names]
     except Exception:
-        # Prevent raw JSON dumps on formatting parse failures
         answer = "I've noted your feedback. Let's adjust the plan."
 
-    # If the user explicitly demands a redesign, override replan flag
     lower_msg = user_message.lower()
-    if any(k in lower_msg for k in ["start over", "redo", "replan", "no! create", "change tech stack"]):
+    if any(k in lower_msg for k in ["start over", "redo", "replan", "no! create", "change tech stack", "instead"]):
         is_replan = True
 
     status_text = answer
@@ -276,7 +264,6 @@ def qa_agent(state: AgencyState):
     }
 
 def edit_agent(state: AgencyState):
-    # THROTTLING: Pause to allow Groq Free Tier TPM bucket to drain
     time.sleep(12)
     
     queue = list(state.get("edit_queue", []))
@@ -339,6 +326,4 @@ def edit_agent(state: AgencyState):
     }
 
 def delivery_agent(state: AgencyState):
-    # Returning an empty dictionary ensures we do NOT overwrite the final
-    # chat_response from the coder_agent, keeping your last code file visible.
     return {"github_url": None}
