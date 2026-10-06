@@ -32,6 +32,10 @@ async def chat_endpoint(
             context_data += f"\n--- {f.filename} ---\n{content.decode('utf-8', errors='ignore')}\n"
             
     full_prompt = (prompt or "") + (f"\n\nAttached Context:\n{context_data}" if context_data else "")
+    prompt_clean = (prompt or "").strip().lower()
+
+    approval_keywords = ["approve", "continue", "next", "proceed", "build next", "yes", "go ahead", "y", "ok"]
+    is_approval_intent = action == "approve" or prompt_clean in approval_keywords
 
     if action == "start":
         inputs = {
@@ -40,13 +44,13 @@ async def chat_endpoint(
             "github_repo": github_repo
         }
         agent_app.invoke(inputs, config)
-    elif action == "approve":
+    elif is_approval_intent:
         agent_app.update_state(config, {"is_approved": True})
-        agent_app.invoke(None, config) 
-    elif action == "feedback":
+        agent_app.invoke(None, config)
+    else:
         agent_app.update_state(config, {
-            "is_approved": False, 
-            "messages": [HumanMessage(content=f"Feedback to revise plan: {prompt}")]
+            "is_approved": False,
+            "messages": [HumanMessage(content=full_prompt or "")]
         })
         agent_app.invoke(None, config)
 
@@ -56,8 +60,9 @@ async def chat_endpoint(
     return {
         "is_paused": is_paused,
         "chat_response": state.values.get("chat_response", ""),
-        "plan": state.values.get("project_plan", ""),
-        "code_files": state.values.get("code_output", {}),
+        # Suppress these variables so the frontend doesn't print duplicates
+        "plan": "",          
+        "code_files": {},    
         "github_url": state.values.get("github_url", "")
     }
 
